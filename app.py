@@ -1,6 +1,4 @@
 from flask import *
-import os
-import database
 from controllers.main import main
 
 app = Flask(__name__, template_folder='templates')
