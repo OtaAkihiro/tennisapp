@@ -1,6 +1,5 @@
 from flask import *
 import hashlib
-import uuid
 import database
 
 api_login = Blueprint('api_login',__name__, template_folder = 'templates')
@@ -29,24 +28,27 @@ def login_api_route():
 	if user == '' or pswd == '':
 		errors_array.append({"message": "Must submit username and password"})
 
-	#INSERT OTHER ERROR CHECKS HERE
-
-
 	#Check that Username exists
-	get_user = 'Select username from Users where username = %s;' % (user)
-	print(get_user)
+	get_user = 'Select username from Users where username = "%s";' % (user)
 	check_name = database.read_from_db(get_user)
-	print(check_name)
 	if not check_name:
 		errors_array.append({"message": "Username does not exist"})
 		return jsonify(errors=errors_array), 404
 		
-	#For now, just compare stored passwords
-	get_pswd = 'Select password from Users where username = %s;' % (user)
-	print(get_pswd)
-	check_pswd = database.read_from_db(get_pswd)
+	#Check that the password is correct
+	get_pswd = 'Select password from Users where username = "%s";' % (user)
+	check_pswd = database.read_from_db(get_pswd) #A list of dictionaries
+	correct_pass = check_pswd[0]['password'] #Get the correct password from the database
 
-	if pswd != check_pswd:
+	#Check that the given password will hash to what was stored in the database
+	algorithm = correct_pass[:correct_pass.find('$')]
+	salt = correct_pass[correct_pass.find('$') + 1:correct_pass.rfind('$')]
+	m = hashlib.new(algorithm)
+	m.update(str(salt + pswd).encode('utf-8'))
+	password_hash = m.hexdigest()
+	test = "$".join([algorithm,salt,password_hash])
+
+	if test != check_pswd[0]['password']:
 		errors_array.append({"message": "Incorrect Password"})
 
 	#If there were errors, reload login page with error messages
@@ -56,14 +58,11 @@ def login_api_route():
 	#If we get here, everything is correct and log the user in
 	session['username'] = user 
 	
-	return ('',200)
+	return jsonify(username=user)
 
 
-'''
-@api_login.route('/api/v1/logout', methods = ['POST'])
+@api_login.route('/api/logout', methods = ['POST'])
 def logout_api_route():
-	db = connect_to_database()
-	cur = db.cursor()
 
 	#Error checking
 	if not ('username' in session):
@@ -73,8 +72,5 @@ def logout_api_route():
 
 	#At this point the user has hit the logout button so we can pop their session
 	session.pop('username', None)
-	session.pop('firstname', None)
-	session.pop('lastname', None)
 
 	return ('', 204)
-'''

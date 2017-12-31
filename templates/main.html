@@ -6,6 +6,35 @@ You are on the main page.
 {% if logged %}
     Welcome {{ user }}! 
 
+    <h2>Logout</h2>
+    <form id='logout_form' method='POST'>
+        <input id='logout_submit' type='submit' value='Logout'><br>
+    </form>
+
+    <script>
+    $(document).ready(function(){
+        $('#logout_form').submit(function(event){
+            event.preventDefault();
+
+            //Submit ajax request to logout api
+            $.ajax({
+                type: 'POST',
+                url: 'http://localhost:5000/api/logout',
+                success: function(data){
+                    location.reload();
+                    return;
+                },
+                error: function(data){
+                    alert('error');
+                    console.log(data);
+                    return;
+                }
+            });
+        });
+    });
+
+    </script>
+
 {% else %}
 
     <h1>Login</h1>
@@ -14,9 +43,29 @@ You are on the main page.
         Password<input id='password_input' type='password' name='password'><br>
         <input id='login_submit' type='submit' value='Login'><br>
     </form>
+
+    <h1>Don't have an account? Please Sign Up!</h1>
+    <p class="center">
+    </p>
+
+    <form id = "new_user_form" method = 'POST'>
+        Username<input id = "new_username_input" type = "text" name = "username"><br>
+        First name<input id = "new_firstname_input" type = "text" name = "firstname"><br>
+        Last name<input id = "new_lastname_input" type = "text" name = "lastname"><br>
+        Password<input id = "new_password1_input" type = "password" name = "password1"><br>
+        Verify password<input id = "new_password2_input" type = "password" name = "password2"><br>
+        Email<input id = "new_email_input" type = "text" name = "email"><br>
+        Rating<input id='new_rating_input' type='text' name='rating'><br>
+        City<input id='new_city_input' type='text' name='city'><br>
+        State<input id='new_state_input' type='text' name='state'><br>
+        <input id = "new_submit" type = "submit" value = "Sign up"><br>
+    </form>
+
     <script>
 
         $(document).ready(function(){
+
+            //This function will run if the login form has been submitted
             $('#login_form').submit(function(event){
                 
                 event.preventDefault();
@@ -36,7 +85,9 @@ You are on the main page.
                     
                     //On success, reload the window
                     success: function(data){
-                        window.location.href = 'http:localhost:5000/';
+                        console.log(data);
+                        //window.location.href = 'http:localhost:5000/';
+                        location.reload();
                         return;
                     },
                     error: function(data){
@@ -45,22 +96,57 @@ You are on the main page.
                     }
                 });
             });
+
+            //This function will run if the new user form has been submitted
+            $('#new_user_form').submit(function(event){
+
+                event.preventDefault();
+                //First we should see if there are previous error messages. If so, we should delete them
+                $(".error").remove();
+
+                var formData = {
+                    'username': $('#new_username_input').val(),
+                    'firstname': $('#new_firstname_input').val(),
+                    'lastname': $('#new_lastname_input').val(),
+                    'password1': $('#new_password1_input').val(),
+                    'password2': $('#new_password2_input').val(),
+                    'email': $('#new_email_input').val(),
+                    'rating': $('#new_rating_input').val(),
+                    'city': $('#new_city_input').val(),
+                    'state': $('#new_state_input').val()
+                };
+
+                $.ajax({
+                    type: 'POST',
+                    url: 'http://localhost:5000/api/create_user', //This is the url we want to send the data to
+                    contentType: "application/json", //We need to do this so api can parse the data
+                    data: JSON.stringify(formData), //^
+                    dataType: 'json', //We want to get json data back from the server
+                    
+                    //On success, reload the window
+                    success: function(data){
+                        window.location.href = 'http:localhost:5000/';
+                        return;
+                    },
+                    error: function(data){
+
+                        //Grab the json object that we passed from our API
+                        var obj = data['responseText'];
+                        var dict = JSON.parse(obj);
+                        
+                        //Iterate through all of the error messages and display them on the html page
+                        for (index in dict['errors']) {
+                            var insert = '<p class="error">' + dict['errors'][index]['message'] + '</p>';
+                            $(document.body).append(insert);
+                        }
+                    }
+                });
+
+            });
+
+
         });
     </script>
-
-    <h1>Don't have an account? Please Sign Up!</h1>
-    <p class="center">
-    </p>
-
-    <form id = "new_user" method = 'POST'>
-        Username<input id = "new_username_input" type = "text" name = "username"><br>
-        First name<input id = "new_firstname_input" type = "text" name = "firstname"><br>
-        Last name<input id = "new_lastname_input" type = "text" name = "lastname"><br>
-        Password<input id = "new_password1_input" type = "password" name = "password1"><br>
-        Verify password<input id = "new_password2_input" type = "password" name = "password2"><br>
-        Email<input id = "new_email_input" type = "text" name = "email"><br>
-        <input id = "new_submit" type = "submit" value = "Sign up"><br>
-    </form>
 
 {% endif %}
 
